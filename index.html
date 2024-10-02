@@ -5,66 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unimenu Stripe</title>
     <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff; /* Branco */
+            color: #333; /* Texto escuro para contraste */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h2 {
+            color: #ff7f50; /* Laranja coral */
+            margin-bottom: 20px;
+        }
+
+        #payment-form {
+            background-color: #f9f9f9; /* Fundo claro para o formulário */
+            border: 1px solid #ddd; /* Bordas suaves */
+            border-radius: 8px; /* Cantos arredondados */
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+            width: 300px; /* Largura fixa */
+        }
+
+        #card-element {
+            border: 1px solid #ddd; /* Bordas do elemento do cartão */
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 20px; /* Espaçamento entre os elementos */
+        }
+
+        #submit {
+            background-color: #ff7f50; /* Laranja coral */
+            color: white; /* Texto branco */
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s; /* Transição suave */
+        }
+
+        #submit:hover {
+            background-color: #ff6347; /* Tom mais escuro de laranja para hover */
+        }
+
+        #payment-message {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #ff6347; /* Vermelho para mensagens de erro */
+        }
+    </style>
 </head>
 <body>
     <h2>Pagamento Unimenu Stripe</h2>
 
-     <!-- Formulário para dados do cartão -->
-  <form id="payment-form">
-    <div id="card-element"><!-- Stripe Element será inserido aqui --></div>
-    <button id="submit">Pagar</button>
-    <div id="payment-message"></div>
-  </form>
+    <!-- Formulário para dados do cartão -->
+    <form id="payment-form">
+        <div id="card-element"><!-- Stripe Element será inserido aqui --></div>
+        <button id="submit">Pagar</button>
+        <div id="payment-message"></div>
+    </form>
 
-  <script>
-    // Chave pública Stripe
-    const stripe = Stripe("pk_test_51Q5UHjJvaS5rJye8xiZaLT1WvrfLeEy9IWeSoVuLC1pHSbQvIlN8BpR7bRr9twD5HQ0c1TcWCcC3cTixSMJTsDst00t9tO7X0E");
+    <script>
+        // Chave pública Stripe
+        const stripe = Stripe("pk_test_51Q5UHjJvaS5rJye8xiZaLT1WvrfLeEy9IWeSoVuLC1pHSbQvIlN8BpR7bRr9twD5HQ0c1TcWCcC3cTixSMJTsDst00t9tO7X0E");
 
-      // Elementos da Stripe
-      const elements = stripe.elements();
-    const cardElement = elements.create("card");
-    cardElement.mount("#card-element");
+        // Elementos da Stripe
+        const elements = stripe.elements();
+        const cardElement = elements.create("card");
+        cardElement.mount("#card-element");
 
-     // Manipula o envio do formulário
-     const form = document.getElementById("payment-form");
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+        // Manipula o envio do formulário
+        const form = document.getElementById("payment-form");
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
 
-       // Chama o back-end para obter o clientSecret
-       const response = await fetch("http://localhost:3000/criar-pagamento", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ amount: 500, currency: "usd" })
-});
+            // Chama o back-end para obter o clientSecret
+            const response = await fetch("http://localhost:3000/criar-pagamento", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ amount: 500, currency: "usd" })
+            });
 
-if (!response.ok) {
-  throw new Error("Erro na requisição: " + response.statusText);
-}
+            if (!response.ok) {
+                throw new Error("Erro na requisição: " + response.statusText);
+            }
 
-const { clientSecret } = await response.json();
-console.log("Client Secret: ", clientSecret);
+            const { clientSecret } = await response.json();
+            console.log("Client Secret: ", clientSecret);
 
-      
+            // Usa o clientSecret para confirmar o pagamento
+            const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: {
+                    card: cardElement,
+                }
+            });
 
-      // Usa o clientSecret para confirmar o pagamento
-      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-        }
-      });
-
-      // Mensagem de sucesso ou erro
-      const messageDiv = document.getElementById("payment-message");
-      if (error) {
-        messageDiv.textContent = `Erro: ${error.message}`;
-      } else if (paymentIntent.status === 'succeeded') {
-        messageDiv.textContent = "Pagamento realizado com sucesso!";
-      }
-    });
-  </script>
-</body>
-    
+            // Mensagem de sucesso ou erro
+            const messageDiv = document.getElementById("payment-message");
+            if (error) {
+                messageDiv.textContent = `Erro: ${error.message}`;
+            } else if (paymentIntent.status === 'succeeded') {
+                messageDiv.textContent = "Pagamento realizado com sucesso!";
+                messageDiv.style.color = "#28a745"; // Verde para sucesso
+            }
+        });
+    </script>
 </body>
 </html>
