@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unimenu Stripe</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h2>Pagamento Unimenu Stripe</h2>
+
+     <!-- Formulário para dados do cartão -->
+  <form id="payment-form">
+    <div id="card-element"><!-- Stripe Element será inserido aqui --></div>
+    <button id="submit">Pagar</button>
+    <div id="payment-message"></div>
+  </form>
+
+  <script>
+    // Chave pública Stripe
+    const stripe = Stripe("pk_test_51Q5UHjJvaS5rJye8xiZaLT1WvrfLeEy9IWeSoVuLC1pHSbQvIlN8BpR7bRr9twD5HQ0c1TcWCcC3cTixSMJTsDst00t9tO7X0E");
+
+      // Elementos da Stripe
+      const elements = stripe.elements();
+    const cardElement = elements.create("card");
+    cardElement.mount("#card-element");
+
+     // Manipula o envio do formulário
+     const form = document.getElementById("payment-form");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+       // Chama o back-end para obter o clientSecret
+       const response = await fetch("http://localhost:3000/criar-pagamento", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ amount: 500, currency: "usd" })
+});
+
+if (!response.ok) {
+  throw new Error("Erro na requisição: " + response.statusText);
+}
+
+const { clientSecret } = await response.json();
+console.log("Client Secret: ", clientSecret);
+
+      
+
+      // Usa o clientSecret para confirmar o pagamento
+      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+        }
+      });
+
+      // Mensagem de sucesso ou erro
+      const messageDiv = document.getElementById("payment-message");
+      if (error) {
+        messageDiv.textContent = `Erro: ${error.message}`;
+      } else if (paymentIntent.status === 'succeeded') {
+        messageDiv.textContent = "Pagamento realizado com sucesso!";
+      }
+    });
+  </script>
+</body>
+    
+</body>
+</html>
