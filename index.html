@@ -1,91 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unimenu Stripe</title>
+    <title>Checkout - Unimenu Stripe</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://js.stripe.com/v3/"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff; /* Branco */
-            color: #333; /* Texto escuro para contraste */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        h2 {
-            color: #ff7f50; /* Laranja coral */
-            margin-bottom: 20px;
-        }
-
-        #payment-form {
-            background-color: #f9f9f9; /* Fundo claro para o formulário */
-            border: 1px solid #ddd; /* Bordas suaves */
-            border-radius: 8px; /* Cantos arredondados */
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Sombra sutil */
-            width: 300px; /* Largura fixa */
-        }
-
-        #card-element {
-            border: 1px solid #ddd; /* Bordas do elemento do cartão */
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 20px; /* Espaçamento entre os elementos */
-        }
-
-        #submit {
-            background-color: #ff7f50; /* Laranja coral */
-            color: white; /* Texto branco */
-            border: none;
-            border-radius: 4px;
-            padding: 10px 15px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s; /* Transição suave */
-        }
-
-        #submit:hover {
-            background-color: #ff6347; /* Tom mais escuro de laranja para hover */
-        }
-
-        #payment-message {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #ff6347; /* Vermelho para mensagens de erro */
-        }
-    </style>
 </head>
 <body>
-    <h2>Pagamento Unimenu Stripe</h2>
+    <div class="mainscreen">
+        <div class="card">
+            <div class="leftside">
+                <img
+                    src="https://i.ibb.co/dcbvbxD/unimenu.jpg"
+                    class="product"
+                    alt="Shoes"
+                />
+            </div>
+            <div class="rightside">
+                <form id="payment-form">
+                    <h1>Checkout</h1>
+                    <h2>Informações de Pagamento</h2>
+                    <p>Nome do Titular</p>
+                    <input type="text" class="inputbox" name="name" required />
 
-    <!-- Formulário para dados do cartão -->
-    <form id="payment-form">
-        <div id="card-element"><!-- Stripe Element será inserido aqui --></div>
-        <button id="submit">Pagar</button>
-        <div id="payment-message"></div>
-    </form>
+                    <p>Número do Cartão</p>
+                    <div id="card-element" class="inputbox"></div> <!-- Stripe Card Element -->
+
+                    <p>Tipo de Cartão</p>
+                    <select class="inputbox" name="card_type" id="card_type" required>
+                        <option value="">--Selecione um Tipo de Cartão--</option>
+                        <option value="Visa">Visa</option>
+                        <option value="RuPay">RuPay</option>
+                        <option value="MasterCard">MasterCard</option>
+                    </select>
+
+                    <button type="submit" class="button">Checkout</button>
+                    <div id="payment-message"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Sucesso -->
+    <div id="success-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-modal">&times;</span>
+            <h2>Pagamento Realizado com Sucesso!</h2>
+            <p>Seu pagamento foi processado com sucesso. Obrigado por sua compra!</p>
+        </div>
+    </div>
 
     <script>
-        // Chave pública Stripe
         const stripe = Stripe("pk_test_51Q5UHjJvaS5rJye8xiZaLT1WvrfLeEy9IWeSoVuLC1pHSbQvIlN8BpR7bRr9twD5HQ0c1TcWCcC3cTixSMJTsDst00t9tO7X0E");
-
-        // Elementos da Stripe
         const elements = stripe.elements();
         const cardElement = elements.create("card");
         cardElement.mount("#card-element");
 
-        // Manipula o envio do formulário
         const form = document.getElementById("payment-form");
+        const successModal = document.getElementById("success-modal");
+        const closeModal = document.getElementById("close-modal");
+        const messageDiv = document.getElementById("payment-message");
+
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 
-            // Chama o back-end para obter o clientSecret
             const response = await fetch("http://localhost:3000/criar-pagamento", {
                 method: "POST",
                 headers: {
@@ -99,24 +78,32 @@
             }
 
             const { clientSecret } = await response.json();
-            console.log("Client Secret: ", clientSecret);
 
-            // Usa o clientSecret para confirmar o pagamento
             const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
                 payment_method: {
                     card: cardElement,
                 }
             });
 
-            // Mensagem de sucesso ou erro
-            const messageDiv = document.getElementById("payment-message");
             if (error) {
                 messageDiv.textContent = `Erro: ${error.message}`;
             } else if (paymentIntent.status === 'succeeded') {
                 messageDiv.textContent = "Pagamento realizado com sucesso!";
-                messageDiv.style.color = "#28a745"; // Verde para sucesso
+                successModal.style.display = "block"; // Exibe o modal
             }
         });
+
+        // Fecha o modal quando o usuário clica no "x"
+        closeModal.onclick = function() {
+            successModal.style.display = "none";
+        }
+
+        // Fecha o modal se o usuário clicar fora da área do modal
+        window.onclick = function(event) {
+            if (event.target === successModal) {
+                successModal.style.display = "none";
+            }
+        }
     </script>
 </body>
 </html>
