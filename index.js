@@ -1,15 +1,20 @@
-const express = require('express');
-const Stripe = require('stripe');
-const dotenv = require('dotenv');
-const cors = require('cors');
-
+const express = require('express')
+const Stripe = require('stripe')
+const dotenv = require('dotenv')
+const cors = require('cors')
+const path = require ('path')
 dotenv.config();
 
 const app = express();
 const stripe = Stripe(process.env.STRIPE_SK);
 
+app.use(express.static(path.join(__dirname)));
 app.use(cors());
 app.use(express.json());
+
+app.get('/', (req,res) => {
+    res.sendFile(path.join(__dirname,'index.html'))
+})
 
 app.post('/criar-pagamento', async (req, res) => {
     const { amount, currency } = req.body;
